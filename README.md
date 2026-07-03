@@ -1,6 +1,6 @@
 # Customer Churn Prediction
 
-  Project Overview
+ # Project Overview
 
 This project predicts whether a telecom customer is likely to churn using Machine Learning. The dataset includes customer demographics, account details, subscribed services, and billing information.
 
