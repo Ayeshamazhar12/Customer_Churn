@@ -39,6 +39,6 @@ Random Forest provided better overall performance for predicting customer churn.
 - `Customer_Churn.ipynb` – Jupyter Notebook containing the complete project
 - `README.md` – Project documentation
 
-                                 Author
+                                                   Author
 
-                             Ayesha Mazhar
+                                                 Ayesha Mazhar
