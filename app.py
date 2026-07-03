@@ -7,7 +7,7 @@ model = joblib.load("customer_churn_model.pkl")
 
 st.set_page_config(page_title="Customer Churn Predictor", layout="wide")
 
-st.title("📊 Customer Churn Prediction App")
+st.title(" Customer Churn Prediction App")
 st.write("Predict whether a customer will leave the company or stay.")
 
 # Sidebar Inputs
@@ -100,7 +100,7 @@ def encode_input():
     return input_data.reshape(1, -1)
 
 
-if st.button("🔮 Predict Churn"):
+if st.button(" Predict Churn"):
     input_data = encode_input()
 
     prediction = model.predict(input_data)[0]
@@ -109,8 +109,8 @@ if st.button("🔮 Predict Churn"):
     st.subheader("Prediction Result")
 
     if prediction == 1:
-        st.error(f"⚠️ Customer will CHURN")
+        st.error(f" Customer will CHURN")
     else:
-        st.success(f"✅ Customer will STAY")
+        st.success(f" Customer will STAY")
 
     st.metric("Churn Probability", f"{probability:.2f}")
