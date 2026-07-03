@@ -1,116 +1,202 @@
-import streamlit as st
-import numpy as np
+import os
+ 
 import joblib
-
-# Load model
-model = joblib.load("models/customer_churn_model.pkl")
-
-st.set_page_config(page_title="Customer Churn Predictor", layout="wide")
-
-st.title(" Customer Churn Prediction App")
-st.write("Predict whether a customer will leave the company or stay.")
-
-# Sidebar Inputs
-st.sidebar.header("Customer Input Features")
-
-gender = st.sidebar.selectbox("Gender", ["Female", "Male"])
-SeniorCitizen = st.sidebar.selectbox("Senior Citizen", [0, 1])
-Partner = st.sidebar.selectbox("Partner", ["Yes", "No"])
-Dependents = st.sidebar.selectbox("Dependents", ["Yes", "No"])
-tenure = st.sidebar.slider("Tenure (months)", 0, 72, 12)
-PhoneService = st.sidebar.selectbox("Phone Service", ["Yes", "No"])
-PaperlessBilling = st.sidebar.selectbox("Paperless Billing", ["Yes", "No"])
-MonthlyCharges = st.sidebar.slider("Monthly Charges", 0, 150, 70)
-TotalCharges = st.sidebar.slider("Total Charges", 0, 10000, 1000)
-
-MultipleLines = st.sidebar.selectbox("Multiple Lines", ["No phone service", "No", "Yes"])
-InternetService = st.sidebar.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
-
-OnlineSecurity = st.sidebar.selectbox("Online Security", ["No", "Yes", "No internet service"])
-OnlineBackup = st.sidebar.selectbox("Online Backup", ["No", "Yes", "No internet service"])
-DeviceProtection = st.sidebar.selectbox("Device Protection", ["No", "Yes", "No internet service"])
-TechSupport = st.sidebar.selectbox("Tech Support", ["No", "Yes", "No internet service"])
-StreamingTV = st.sidebar.selectbox("Streaming TV", ["No", "Yes", "No internet service"])
-StreamingMovies = st.sidebar.selectbox("Streaming Movies", ["No", "Yes", "No internet service"])
-
-Contract = st.sidebar.selectbox("Contract", ["Month-to-month", "One year", "Two year"])
-PaymentMethod = st.sidebar.selectbox("Payment Method", [
-    "Electronic check",
-    "Mailed check",
-    "Bank transfer (automatic)",
-    "Credit card (automatic)"
-])
-
-# Convert input into model format (30 features)
-
-def encode_input():
-    input_data = np.zeros(30)
-
-    input_data[0] = 1 if gender == "Male" else 0
-    input_data[1] = SeniorCitizen
-    input_data[2] = 1 if Partner == "Yes" else 0
-    input_data[3] = 1 if Dependents == "Yes" else 0
-    input_data[4] = tenure
-    input_data[5] = 1 if PhoneService == "Yes" else 0
-    input_data[6] = 1 if PaperlessBilling == "Yes" else 0
-    input_data[7] = MonthlyCharges
-    input_data[8] = TotalCharges
-
-    # MultipleLines
-    input_data[9] = 1 if MultipleLines == "No phone service" else 0
-    input_data[10] = 1 if MultipleLines == "Yes" else 0
-
-    # InternetService
-    input_data[11] = 1 if InternetService == "Fiber optic" else 0
-    input_data[12] = 1 if InternetService == "No" else 0
-
-    # OnlineSecurity
-    input_data[13] = 1 if OnlineSecurity == "No internet service" else 0
-    input_data[14] = 1 if OnlineSecurity == "Yes" else 0
-
-    # OnlineBackup
-    input_data[15] = 1 if OnlineBackup == "No internet service" else 0
-    input_data[16] = 1 if OnlineBackup == "Yes" else 0
-
-    # DeviceProtection
-    input_data[17] = 1 if DeviceProtection == "No internet service" else 0
-    input_data[18] = 1 if DeviceProtection == "Yes" else 0
-
-    # TechSupport
-    input_data[19] = 1 if TechSupport == "No internet service" else 0
-    input_data[20] = 1 if TechSupport == "Yes" else 0
-
-    # StreamingTV
-    input_data[21] = 1 if StreamingTV == "No internet service" else 0
-    input_data[22] = 1 if StreamingTV == "Yes" else 0
-
-    # StreamingMovies
-    input_data[23] = 1 if StreamingMovies == "No internet service" else 0
-    input_data[24] = 1 if StreamingMovies == "Yes" else 0
-
-    # Contract
-    input_data[25] = 1 if Contract == "One year" else 0
-    input_data[26] = 1 if Contract == "Two year" else 0
-
-    # PaymentMethod
-    input_data[27] = 1 if PaymentMethod == "Credit card (automatic)" else 0
-    input_data[28] = 1 if PaymentMethod == "Electronic check" else 0
-    input_data[29] = 1 if PaymentMethod == "Mailed check" else 0
-
-    return input_data.reshape(1, -1)
-
-
-if st.button(" Predict Churn"):
-    input_data = encode_input()
-
-    prediction = model.predict(input_data)[0]
-    probability = model.predict_proba(input_data)[0][1]
-
-    st.subheader("Prediction Result")
-
-    if prediction == 1:
-        st.error(f" Customer will CHURN")
+import numpy as np
+import streamlit as st
+ 
+# --------------------------------------------------------------------------
+# Page configuration
+# --------------------------------------------------------------------------
+st.set_page_config(
+    page_title="Customer Churn Prediction App",
+    page_icon="📉",
+    layout="centered",
+)
+ 
+# --------------------------------------------------------------------------
+# Model loading
+# --------------------------------------------------------------------------
+MODEL_PATH = os.path.join("models", "customer_churn_model.pkl")
+ 
+ 
+@st.cache_resource
+def load_model(path: str):
+    """Load the trained model with joblib. Cached so it only loads once."""
+    if not os.path.exists(path):
+        return None
+    return joblib.load(path)
+ 
+ 
+model = load_model(MODEL_PATH)
+ 
+st.title("Customer Churn Prediction App")
+st.write(
+    "Enter the customer's details in the sidebar and click **Predict Churn** "
+    "to see whether the customer is likely to churn."
+)
+ 
+if model is None:
+    st.error(
+        f"Could not find a model file at `{MODEL_PATH}`. "
+        "Make sure `customer_churn_model.pkl` is placed inside a `models/` "
+        "folder in the same directory as this app (this path is relative, "
+        "so it also works on Streamlit Cloud)."
+    )
+ 
+# --------------------------------------------------------------------------
+# Sidebar — user inputs
+# --------------------------------------------------------------------------
+st.sidebar.header("Customer Information")
+ 
+gender = st.sidebar.selectbox("Gender", ["Male", "Female"])
+senior_citizen = st.sidebar.selectbox("Senior Citizen", [0, 1])
+partner = st.sidebar.selectbox("Partner", ["Yes", "No"])
+dependents = st.sidebar.selectbox("Dependents", ["Yes", "No"])
+tenure = st.sidebar.slider("Tenure (months)", min_value=0, max_value=72, value=12)
+phone_service = st.sidebar.selectbox("Phone Service", ["Yes", "No"])
+paperless_billing = st.sidebar.selectbox("Paperless Billing", ["Yes", "No"])
+monthly_charges = st.sidebar.number_input(
+    "Monthly Charges", min_value=0.0, max_value=1000.0, value=70.0, step=1.0
+)
+total_charges = st.sidebar.number_input(
+    "Total Charges", min_value=0.0, max_value=100000.0, value=1000.0, step=10.0
+)
+multiple_lines = st.sidebar.selectbox(
+    "Multiple Lines", ["No", "Yes", "No phone service"]
+)
+internet_service = st.sidebar.selectbox(
+    "Internet Service", ["DSL", "Fiber optic", "No"]
+)
+online_security = st.sidebar.selectbox(
+    "Online Security", ["No", "Yes", "No internet service"]
+)
+online_backup = st.sidebar.selectbox(
+    "Online Backup", ["No", "Yes", "No internet service"]
+)
+device_protection = st.sidebar.selectbox(
+    "Device Protection", ["No", "Yes", "No internet service"]
+)
+tech_support = st.sidebar.selectbox(
+    "Tech Support", ["No", "Yes", "No internet service"]
+)
+streaming_tv = st.sidebar.selectbox(
+    "Streaming TV", ["No", "Yes", "No internet service"]
+)
+streaming_movies = st.sidebar.selectbox(
+    "Streaming Movies", ["No", "Yes", "No internet service"]
+)
+contract = st.sidebar.selectbox(
+    "Contract Type", ["Month-to-month", "One year", "Two year"]
+)
+payment_method = st.sidebar.selectbox(
+    "Payment Method",
+    [
+        "Electronic check",
+        "Mailed check",
+        "Bank transfer (automatic)",
+        "Credit card (automatic)",
+    ],
+)
+ 
+predict_button = st.sidebar.button("Predict Churn")
+ 
+ 
+# --------------------------------------------------------------------------
+# Manual encoding helpers
+# --------------------------------------------------------------------------
+def yes_no(value: str) -> int:
+    return 1 if value == "Yes" else 0
+ 
+ 
+def build_feature_vector() -> np.ndarray:
+    """
+    Manually encode every input and assemble them into a NumPy array of
+    shape (1, 30) matching the get_dummies(drop_first=True) feature order
+    described in the module docstring.
+    """
+    features = [
+        senior_citizen,                                            # 0
+        tenure,                                                     # 1
+        monthly_charges,                                            # 2
+        total_charges,                                              # 3
+        1 if gender == "Male" else 0,                               # 4
+        yes_no(partner),                                            # 5
+        yes_no(dependents),                                         # 6
+        yes_no(phone_service),                                      # 7
+        1 if multiple_lines == "No phone service" else 0,           # 8
+        1 if multiple_lines == "Yes" else 0,                        # 9
+        1 if internet_service == "Fiber optic" else 0,              # 10
+        1 if internet_service == "No" else 0,                       # 11
+        1 if online_security == "No internet service" else 0,       # 12
+        1 if online_security == "Yes" else 0,                       # 13
+        1 if online_backup == "No internet service" else 0,         # 14
+        1 if online_backup == "Yes" else 0,                         # 15
+        1 if device_protection == "No internet service" else 0,     # 16
+        1 if device_protection == "Yes" else 0,                     # 17
+        1 if tech_support == "No internet service" else 0,          # 18
+        1 if tech_support == "Yes" else 0,                          # 19
+        1 if streaming_tv == "No internet service" else 0,          # 20
+        1 if streaming_tv == "Yes" else 0,                          # 21
+        1 if streaming_movies == "No internet service" else 0,      # 22
+        1 if streaming_movies == "Yes" else 0,                      # 23
+        1 if contract == "One year" else 0,                         # 24
+        1 if contract == "Two year" else 0,                         # 25
+        yes_no(paperless_billing),                                  # 26
+        1 if payment_method == "Credit card (automatic)" else 0,    # 27
+        1 if payment_method == "Electronic check" else 0,           # 28
+        1 if payment_method == "Mailed check" else 0,                # 29
+    ]
+ 
+    array = np.array(features, dtype=float).reshape(1, -1)
+    return array
+ 
+ 
+# --------------------------------------------------------------------------
+# Main area — prediction results
+# --------------------------------------------------------------------------
+st.subheader("Prediction Result")
+ 
+if predict_button:
+    if model is None:
+        st.error("Cannot run prediction because the model failed to load.")
     else:
-        st.success(f" Customer will STAY")
-
-    st.metric("Churn Probability", f"{probability:.2f}")
+        input_array = build_feature_vector()
+ 
+        if input_array.shape != (1, 30):
+            st.error(
+                f"Feature vector has shape {input_array.shape}, expected (1, 30). "
+                "Check build_feature_vector() against your model's training columns."
+            )
+        else:
+            try:
+                prediction = model.predict(input_array)[0]
+ 
+                proba = None
+                if hasattr(model, "predict_proba"):
+                    proba = model.predict_proba(input_array)[0]
+ 
+                if prediction == 1:
+                    st.error("⚠️ This customer is likely to **CHURN**.")
+                else:
+                    st.success("✅ This customer is likely to **STAY**.")
+ 
+                if proba is not None:
+                    churn_prob = proba[1] if len(proba) > 1 else proba[0]
+                    stay_prob = proba[0] if len(proba) > 1 else 1 - proba[0]
+ 
+                    st.write("### Prediction Probability")
+                    col1, col2 = st.columns(2)
+                    col1.metric("Stay", f"{stay_prob * 100:.2f}%")
+                    col2.metric("Churn", f"{churn_prob * 100:.2f}%")
+                    st.progress(float(churn_prob))
+ 
+            except Exception as e:
+                st.error(f"Prediction failed: {e}")
+else:
+    st.info("Fill in the customer details in the sidebar, then click **Predict Churn**.")
+ 
+st.markdown("---")
+st.caption(
+    "Model expected at `models/customer_churn_model.pkl` (relative path, "
+    "works locally and on Streamlit Cloud)."
+)
